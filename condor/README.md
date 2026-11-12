@@ -1,6 +1,8 @@
 # HTCondor scripts and run registry (proof cluster)
 
-Submit from the HTCondor submit host (proof-11). Every run is registered so that results can be
+Submit from the HTCondor submit host (proof-11; if proof-11 is down, proof-12 has the same condor
+configuration). Do not submit from proof-10 (its client config breaks auth and holds jobs).
+proof-11 resolves only to IPv6: from a network without IPv6 it is unreachable, use proof-10/proof-12. Every run is registered so that results can be
 compared later with the exact code, environment and configuration that produced them.
 
 - `sampling_job.sh` – one job: generates the macro with `sampling/make_macro.py`, runs `DREMTubes`
