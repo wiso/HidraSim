@@ -4,3 +4,5 @@ build-container/
 *.csv
 analysis/*.root
 .devcontainer/.env
+runs/
+build-*/
