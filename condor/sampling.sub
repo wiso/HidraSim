@@ -18,6 +18,9 @@ endif
 if !defined joblist
   joblist = joblists/sampling_v1.txt
 endif
+if !defined prio
+  prio = 0
+endif
 if !defined particle
   particle = e+
 endif
@@ -32,6 +35,7 @@ output     = sf_E$(energy)_$(job).out
 error      = sf_E$(energy)_$(job).err
 log        = sampling.$(ClusterId).log
 should_transfer_files = NO
+priority   = $(prio)
 request_cpus   = 1
 request_memory = 2GB
 queue energy, ie, job, nev from $(joblist)

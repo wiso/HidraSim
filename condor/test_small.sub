@@ -1,0 +1,13 @@
+# Small test: 4 jobs x 20 events, e- 20 GeV, FTFP_BERT
+# Submit (from proof-11) with: condor_submit test_small.sub
+executable = run_job.sh
+outdir     = $ENV(HOME)/HidraSim/condor/out/test_small/job$(Process)
+arguments  = "$(outdir) 20 $(Process)1 $(Process)7"
+initialdir = $ENV(HOME)/HidraSim/condor/logs
+output     = test_small.$(ClusterId).$(Process).out
+error      = test_small.$(ClusterId).$(Process).err
+log        = test_small.$(ClusterId).log
+should_transfer_files = NO
+request_cpus   = 1
+request_memory = 2GB
+queue 4
