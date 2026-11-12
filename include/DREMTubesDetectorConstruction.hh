@@ -19,6 +19,11 @@
 #include "G4TwoVector.hh"
 #include "G4ExtrudedSolid.hh"
 
+//Includers from C++
+//
+#include <vector>
+#include <string>
+
 //Include geometrical parameters
 #include "DREMTubesGeoPar.hh"
 #include "DREMTubesGeoMessenger.hh"
@@ -87,6 +92,10 @@ class DREMTubesDetectorConstruction : public G4VUserDetectorConstruction {
         void SetYshift(const G4double& val) {fYshift=val;};
         void SetOrzrot(const G4double& val) {fOrzrot=val;};
         void SetVerrot(const G4double& val) {fVerrot=val;};
+        void SetFiberMapPath(const G4String& val) {fFiberMapPath=val;};
+        G4String GetFiberMapPath() const {return fFiberMapPath;};
+        void SetTowerMapPath(const G4String& val) {fTowerMapPath=val;};
+        G4String GetTowerMapPath() const {return fTowerMapPath;};
 
 
 
@@ -98,10 +107,26 @@ class DREMTubesDetectorConstruction : public G4VUserDetectorConstruction {
 	std::vector<G4TwoVector> calcmod(double radius, int nrow, int ncol); 
 
     private:
-        
+
         //Mandatory method for Geant4
         //
         G4VPhysicalVolume* DefineVolumes();
+
+        //Per-fiber geometry map (CSV) support
+        //
+        //Recorded during DefineVolumes(): one module placement per active tower,
+        //and the fiber-local table (placed once into the shared module volume).
+        struct ModulePlacement { G4int towerID; G4double mx, my; G4int gridCol, gridRow; };
+        struct FiberLocal { char type; G4int colInMod, rowInMod, copyNumber;
+                            G4double lx, ly; std::string pvName; };
+        std::vector<ModulePlacement> fModulePlacements;
+        std::vector<FiberLocal> fFiberLocals;
+        G4double fTubeRadius{1.*mm}; //tube radius, for row/column binning tolerance
+        G4double fModuleX{0.}, fModuleY{0.}; //module footprint (width,height), for tower map
+        //Write the per-fiber CSV to fFiberMapPath (called once, master thread).
+        void WriteFiberMap() const;
+        //Write the per-tower CSV to fTowerMapPath (called once, master thread).
+        void WriteTowerMap() const;
 
         //Members
         //
@@ -119,6 +144,11 @@ class DREMTubesDetectorConstruction : public G4VUserDetectorConstruction {
         //Parameters selectable via UI
         //
         G4double fXshift{0.}, fYshift{0.}, fVerrot{0.}, fOrzrot{0.};
+
+        //Paths for the geometry maps; empty = disabled
+        //
+        G4String fFiberMapPath{""};
+        G4String fTowerMapPath{""};
 
 };
 

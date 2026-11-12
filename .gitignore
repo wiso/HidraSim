@@ -1,4 +1,6 @@
 build/
+build-container/
 *.root
+*.csv
 analysis/*.root
 .devcontainer/.env

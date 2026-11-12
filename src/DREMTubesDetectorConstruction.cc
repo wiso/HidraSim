@@ -16,6 +16,11 @@
 //
 #include <random>
 #include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <algorithm>
+#include "G4Threading.hh"
+#include "G4ApplicationState.hh"
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -72,6 +77,16 @@ DREMTubesGeoMessenger::DREMTubesGeoMessenger(DREMTubesDetectorConstruction* DetC
     fVerrotcmd->SetGuidance("Lift up calorimeter from back side (default deg)");
     fVerrotcmd->SetDefaultUnit("deg");
     fVerrotcmd->SetDefaultValue(0.);
+    fFiberMapcmd = new G4UIcmdWithAString("/tbgeo/fibermap", this);
+    fFiberMapcmd->SetParameterName("path",/*omittable=*/false);
+    fFiberMapcmd->SetGuidance("Write per-fiber geometry map (one row per SiPM fiber) to the given CSV path");
+    // The map is written during geometry construction (/run/initialize), so the
+    // path must be set beforehand: only allow the command in the PreInit state.
+    fFiberMapcmd->AvailableForStates(G4State_PreInit);
+    fTowerMapcmd = new G4UIcmdWithAString("/tbgeo/towermap", this);
+    fTowerMapcmd->SetParameterName("path",/*omittable=*/false);
+    fTowerMapcmd->SetGuidance("Write per-tower geometry map (one row per tower) to the given CSV path");
+    fTowerMapcmd->AvailableForStates(G4State_PreInit);
 }
 
 
@@ -86,6 +101,8 @@ DREMTubesGeoMessenger::~DREMTubesGeoMessenger(){
     delete fYshiftcmd;
     delete fOrzrotcmd;
     delete fVerrotcmd;
+    delete fFiberMapcmd;
+    delete fTowerMapcmd;
 }
 
 //Messenger SetNewValue virtual method from base class
@@ -107,6 +124,14 @@ void DREMTubesGeoMessenger::SetNewValue(G4UIcommand* command, G4String newValue)
     else if(command == fVerrotcmd){
         fDetConstruction->SetVerrot(fVerrotcmd->GetNewDoubleValue(newValue));
         G4cout<<"tbgeo: ver-rotated test-beam setup by "<<fDetConstruction->GetVerrot()<<" rad"<<G4endl;
+    }
+    else if(command == fFiberMapcmd){
+        fDetConstruction->SetFiberMapPath(newValue);
+        G4cout<<"tbgeo: per-fiber geometry map will be written to "<<newValue<<G4endl;
+    }
+    else if(command == fTowerMapcmd){
+        fDetConstruction->SetTowerMapPath(newValue);
+        G4cout<<"tbgeo: per-tower geometry map will be written to "<<newValue<<G4endl;
     }
 }
 
@@ -415,8 +440,16 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
     G4double tuberadius = 1.0*mm;
     G4double dtubeY=sq3*tuberadius;
     G4double dtubeX=2.*tuberadius;
-    G4double moduleX = (2*NofFiberscolumn+1)*tuberadius; 
+
+    //Reset the per-fiber map buffers for this geometry build (see WriteFiberMap)
+    //
+    fTubeRadius = tuberadius;
+    fModulePlacements.clear();
+    fFiberLocals.clear();
+    G4double moduleX = (2*NofFiberscolumn+1)*tuberadius;
     G4double moduleY = (NofFibersrow-1.)*dtubeY+4.*tuberadius*sq3m1;
+    fModuleX = moduleX; //store module footprint for the tower map
+    fModuleY = moduleY;
 //  side of hexagon in which tube is inscribed
 //    G4double side=tuberadius*2*sq3m1;
 
@@ -662,8 +695,10 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
               m_x = -dtubeX*NofFiberscolumn*column+ dtubeX*NofFiberscolumn*(NofmodulesX-1)/2;
               m_y = row*NofFibersrow*dtubeY-NofFibersrow*dtubeY*(NofmodulesY-1)/2;
             }	     	    
-            if(modflag[ii]>=0) {        
+            if(modflag[ii]>=0) {
               copynumbermodule = modflag[ii];
+              //Record this module placement for the per-fiber map
+              fModulePlacements.push_back({copynumbermodule, m_x, m_y, column, row});
 //              copynumbermodule = (1+column)+(row*NofmodulesX);
 //	      std::cout << " column " << column << " row " << row << " cpnm " << copynumbermodule << std::endl;
 // setup for 90 deg rotation of modules
@@ -973,6 +1008,8 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
                 vec_SiPM.setZ(fiberZ/2+SiPMZ/2-0.18);
             
                 copynumber = ((NofFibersrow/2)*column+row/2);
+                //Record this scintillating fiber (local to the module) for the per-fiber map
+                fFiberLocals.push_back({'S', column, row, copynumber, S_x, S_y, S_name});
                 auto logic_S_fiber = constructscinfiber(tolerance,
                                                         tuberadius,
                                                         fiberZ,
@@ -1049,7 +1086,9 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
                 vec_SiPM.setZ(fiberZ/2+SiPMZ/2-0.18);
 
                 copynumber = ((NofFibersrow/2)*column+row/2);
-                        
+                //Record this Cherenkov fiber (local to the module) for the per-fiber map
+                fFiberLocals.push_back({'C', column, row, copynumber, C_x, C_y, C_name});
+
                 auto logic_C_fiber = constructcherfiber(tolerance,
                                                         tuberadius,
                                                         fiberZ,
@@ -1177,8 +1216,187 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
 
     // Return physical world
     //
+    //Optionally dump the per-fiber geometry map (once, on the master thread)
+    //
+    if(!fFiberMapPath.empty() && G4Threading::IsMasterThread()){
+        WriteFiberMap();
+    }
+    if(!fTowerMapPath.empty() && G4Threading::IsMasterThread()){
+        WriteTowerMap();
+    }
+
     return fWorldPV;
 
+}
+
+//
+// Write one CSV row per physical SiPM-readout fiber of the calorimeter.
+//
+// Only fibers belonging to SiPM towers (those listed in SiPMMod[]) are written:
+// their signals fill VectorSignals (scintillating) / VectorSignalsCher (Cherenkov).
+// PMT-readout towers are skipped. Fibers are placed once into a shared module
+// volume, so we cross the recorded fiber-local table (fFiberLocals) with every
+// SiPM module placement (fModulePlacements). Coordinates are in the
+// calorimeter-surface frame with NO rotation applied (neither the platform tilt,
+// which lives above this frame, nor the irot 90 deg module rotation).
+//
+void DREMTubesDetectorConstruction::WriteFiberMap() const {
+
+    if(fModulePlacements.empty() || fFiberLocals.empty()){
+        G4cerr << "WriteFiberMap: no fibers/modules recorded, nothing to write." << G4endl;
+        return;
+    }
+
+    auto globalX = [](const ModulePlacement& m, const FiberLocal& f){ return m.mx + f.lx; };
+    auto globalY = [](const ModulePlacement& m, const FiberLocal& f){ return m.my + f.ly; };
+
+    // Geometric row/column: rank the distinct x (column) and y (row) positions of
+    // the SiPM fibers only. Two positions closer than tol are the same row/column;
+    // tol is well below the ~1 mm minimum tube spacing but far above float noise.
+    const G4double tol = 0.3*fTubeRadius;
+    std::vector<G4double> allX, allY;
+    for(const auto& m : fModulePlacements){
+        if(GetSiPMTower(m.towerID) < 0) continue; // PMT tower: skip
+        for(const auto& f : fFiberLocals){
+            allX.push_back(globalX(m,f));
+            allY.push_back(globalY(m,f));
+        }
+    }
+    auto buildReps = [tol](std::vector<G4double> v){
+        std::sort(v.begin(), v.end());
+        std::vector<G4double> reps;
+        for(G4double x : v){
+            if(reps.empty() || x - reps.back() > tol) reps.push_back(x);
+        }
+        return reps;
+    };
+    const std::vector<G4double> xReps = buildReps(allX);
+    const std::vector<G4double> yReps = buildReps(allY);
+    auto rankOf = [tol](const std::vector<G4double>& reps, G4double x){
+        int i = (int)(std::upper_bound(reps.begin(), reps.end(), x + 0.5*tol) - reps.begin()) - 1;
+        return i < 0 ? 0 : i;
+    };
+
+    std::ofstream out(fFiberMapPath);
+    if(!out.is_open()){
+        G4cerr << "WriteFiberMap: cannot open '" << fFiberMapPath << "' for writing." << G4endl;
+        return;
+    }
+    out << std::fixed << std::setprecision(4);
+    out << "output_index,output_vector,fiber_type,x,y,"
+        << "global_row,global_col,local_row,local_col,tower_id,"
+        << "mod_grid_col,mod_grid_row,module_x,module_y,copynumber,pv_name\n";
+
+    unsigned long nrows = 0;
+    for(const auto& m : fModulePlacements){
+        const G4int siPMTower = GetSiPMTower(m.towerID);
+        if(siPMTower < 0) continue; // PMT tower: skip
+        for(const auto& f : fFiberLocals){
+            const G4double gx = globalX(m,f);
+            const G4double gy = globalY(m,f);
+
+            // Output-vector index, exactly as SteppingAction fills it for SiPM fibers.
+            const G4int outIndex = siPMTower*NoFibersTower + f.copyNumber;
+            const char* outVector = (f.type=='S') ? "VectorSignals" : "VectorSignalsCher";
+
+            const G4int localRow = f.rowInMod;                        // 0 = bottom
+            const G4int localCol = NofFiberscolumn - 1 - f.colInMod;  // 0 = left
+
+            out << outIndex << ','
+                << outVector << ','
+                << f.type << ','
+                << gx << ',' << gy << ','
+                << rankOf(yReps, gy) << ',' << rankOf(xReps, gx) << ','
+                << localRow << ',' << localCol << ','
+                << m.towerID << ','
+                << m.gridCol << ',' << m.gridRow << ','
+                << m.mx << ',' << m.my << ','
+                << f.copyNumber << ','
+                << f.pvName << '\n';
+            ++nrows;
+        }
+    }
+    out.close();
+    G4cout << "WriteFiberMap: wrote " << nrows << " SiPM fiber rows to '"
+           << fFiberMapPath << "' (" << xReps.size() << " columns x "
+           << yReps.size() << " rows)." << G4endl;
+}
+
+//
+// Write one CSV row per active tower of the calorimeter (both SiPM and PMT).
+//
+// One row per recorded module placement (fModulePlacements). Coordinates are the
+// module centre in the calorimeter-surface frame with NO rotation applied.
+//
+void DREMTubesDetectorConstruction::WriteTowerMap() const {
+
+    if(fModulePlacements.empty()){
+        G4cerr << "WriteTowerMap: no modules recorded, nothing to write." << G4endl;
+        return;
+    }
+
+    // Geometric row/column: rank the distinct module-centre x/y positions.
+    // Tower spacing is tens of mm, so a 1 mm tolerance safely separates them.
+    const G4double tol = fTubeRadius;
+    std::vector<G4double> allX, allY;
+    for(const auto& m : fModulePlacements){ allX.push_back(m.mx); allY.push_back(m.my); }
+    auto buildReps = [tol](std::vector<G4double> v){
+        std::sort(v.begin(), v.end());
+        std::vector<G4double> reps;
+        for(G4double x : v){
+            if(reps.empty() || x - reps.back() > tol) reps.push_back(x);
+        }
+        return reps;
+    };
+    const std::vector<G4double> xReps = buildReps(allX);
+    const std::vector<G4double> yReps = buildReps(allY);
+    auto rankOf = [tol](const std::vector<G4double>& reps, G4double x){
+        int i = (int)(std::upper_bound(reps.begin(), reps.end(), x + 0.5*tol) - reps.begin()) - 1;
+        return i < 0 ? 0 : i;
+    };
+
+    std::ofstream out(fTowerMapPath);
+    if(!out.is_open()){
+        G4cerr << "WriteTowerMap: cannot open '" << fTowerMapPath << "' for writing." << G4endl;
+        return;
+    }
+    out << std::fixed << std::setprecision(4);
+    out << "tower_id,readout,sipm_slot,x,y,global_row,global_col,"
+        << "mod_grid_col,mod_grid_row,output_scin_vector,output_cher_vector,"
+        << "output_index_base,n_fibers,module_dx,module_dy,module_z\n";
+
+    // Every tower holds the same number of tubes (scintillating + Cherenkov).
+    const G4int nFibers = NofFiberscolumn*NofFibersrow;
+
+    unsigned long nrows = 0;
+    for(const auto& m : fModulePlacements){
+        const G4int siPMTower = GetSiPMTower(m.towerID);
+        const bool isSiPM = (siPMTower >= 0);
+        // Output-vector mapping:
+        //  - SiPM tower: its fibers fill VectorSignals/VectorSignalsCher starting at
+        //    output_index_base = siPMTower*NoFibersTower (one entry per fiber).
+        //  - PMT tower:  its aggregate signal fills VecSPMT/VecCPMT at index tower_id.
+        const char* scinVec = isSiPM ? "VectorSignals"    : "VecSPMT";
+        const char* cherVec = isSiPM ? "VectorSignalsCher": "VecCPMT";
+        const G4int indexBase = isSiPM ? siPMTower*NoFibersTower : m.towerID;
+
+        out << m.towerID << ','
+            << (isSiPM ? "SiPM" : "PMT") << ','
+            << siPMTower << ','
+            << m.mx << ',' << m.my << ','
+            << rankOf(yReps, m.my) << ',' << rankOf(xReps, m.mx) << ','
+            << m.gridCol << ',' << m.gridRow << ','
+            << scinVec << ',' << cherVec << ','
+            << indexBase << ','
+            << nFibers << ','
+            << fModuleX << ',' << fModuleY << ','
+            << moduleZ << '\n';
+        ++nrows;
+    }
+    out.close();
+    G4cout << "WriteTowerMap: wrote " << nrows << " tower rows to '"
+           << fTowerMapPath << "' (" << xReps.size() << " columns x "
+           << yReps.size() << " rows)." << G4endl;
 }
 
 // Define constructscinfiber method()
