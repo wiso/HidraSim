@@ -1254,7 +1254,7 @@ void HidraTB25Ana(double energy, const std::string& input)
   double venergy; simtree->SetBranchAddress("PrimaryParticleEnergy", &venergy);
   double lenergy; simtree->SetBranchAddress("EscapedEnergyl", &lenergy);
   double denergy; simtree->SetBranchAddress("EscapedEnergyd", &denergy);
-  double edep; simtree->SetBranchAddress("EnergyTot", &edep);
+  double edep; simtree->SetBranchAddress("EnergyDepCalo", &edep);
   double Stot; simtree->SetBranchAddress("NofPMTScinDet", &Stot);
   double Ctot; simtree->SetBranchAddress("NofPMTCherDet", &Ctot);
   double PSdep; simtree->SetBranchAddress("PSEnergy", &PSdep);

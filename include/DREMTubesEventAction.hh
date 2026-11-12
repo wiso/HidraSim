@@ -78,7 +78,7 @@ class DREMTubesEventAction : public G4UserEventAction {
         G4double  EnergyCher; //Energy in Cherenkov fibers
         G4int     NofCherDet; //Number of Cherenkov p.e. detected 
     	G4int     NofScinDet; //Number of Scintillating p.e. detected
-        G4double  EnergyTot;  //Total energy deposited (does not count invisibile energy)
+        G4double  EnergyDepCalo;  //Energy deposited in the calorimeter (tubes + air of its structure; no invisible energy)
         G4int     PrimaryPDGID; //PDGID of primary particle
         G4double  PrimaryParticleEnergy; //Primary particle energy
         G4double  PrimaryX; //Primary particle energy
@@ -166,7 +166,7 @@ inline void DREMTubesEventAction::AddCher(G4double de){
 }
 
 inline void DREMTubesEventAction::Addenergy(G4double de){
-    EnergyTot += de;
+    EnergyDepCalo += de;
 }
 
 inline void DREMTubesEventAction::AddPSEnergy(G4double de){

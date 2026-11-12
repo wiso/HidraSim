@@ -50,7 +50,7 @@ DREMTubesRunAction::DREMTubesRunAction( DREMTubesEventAction* eventAction )
     analysisManager->CreateNtupleDColumn("EnergyCher");                     //1
     analysisManager->CreateNtupleDColumn("NofPMTCherDet");                  //2
     analysisManager->CreateNtupleDColumn("NofPMTScinDet");                  //3
-    analysisManager->CreateNtupleDColumn("EnergyTot");                      //4
+    analysisManager->CreateNtupleDColumn("EnergyDepCalo");                  //4
     analysisManager->CreateNtupleDColumn("PrimaryParticleEnergy");          //5
     analysisManager->CreateNtupleIColumn("PrimaryPDGID");                   //6
     analysisManager->CreateNtupleDColumn("EscapedEnergyl");                 //7

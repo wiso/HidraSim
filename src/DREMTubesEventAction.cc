@@ -36,7 +36,7 @@ DREMTubesEventAction::DREMTubesEventAction()
     EnergyCher(0.),
     NofCherDet(0),
     NofScinDet(0),
-    EnergyTot(0.),
+    EnergyDepCalo(0.),
     PrimaryPDGID(0),
     PrimaryX(0),
     PrimaryY(0),
@@ -66,7 +66,7 @@ void DREMTubesEventAction::BeginOfEventAction(const G4Event*) {
     EnergyCher = 0.;
     NofCherDet = 0;
     NofScinDet = 0;
-    EnergyTot = 0.;
+    EnergyDepCalo = 0.;
     PrimaryPDGID = 0;
     PrimaryX = 0;
     PrimaryY = 0;
@@ -116,7 +116,7 @@ void DREMTubesEventAction::EndOfEventAction(const G4Event* ) {
     analysisManager->FillNtupleDColumn(1, EnergyCher);
     analysisManager->FillNtupleDColumn(2, NofCherDet);
     analysisManager->FillNtupleDColumn(3, NofScinDet);
-    analysisManager->FillNtupleDColumn(4, EnergyTot);
+    analysisManager->FillNtupleDColumn(4, EnergyDepCalo);
     analysisManager->FillNtupleDColumn(5, PrimaryParticleEnergy);
     analysisManager->FillNtupleIColumn(6, PrimaryPDGID);
     analysisManager->FillNtupleDColumn(7, EscapedEnergyl);

@@ -223,7 +223,7 @@ void HidraAna(double energy, const string intup, unsigned int EventDisplayEvery 
   double venergy; simtree->SetBranchAddress( "PrimaryParticleEnergy", &venergy );
   double lenergy; simtree->SetBranchAddress( "EscapedEnergyl", &lenergy );
   double denergy; simtree->SetBranchAddress( "EscapedEnergyd", &denergy );
-  double edep; simtree->SetBranchAddress( "EnergyTot", &edep );
+  double edep; simtree->SetBranchAddress( "EnergyDepCalo", &edep );
   double Stot; simtree->SetBranchAddress( "NofPMTScinDet", &Stot );
   double Ctot; simtree->SetBranchAddress( "NofPMTCherDet", &Ctot );
   double PSdep; simtree->SetBranchAddress( "PSEnergy", &PSdep );
