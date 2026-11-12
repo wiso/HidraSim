@@ -125,6 +125,8 @@ DREMTubesDetectorConstruction::DREMTubesDetectorConstruction()
     : G4VUserDetectorConstruction(),
     fCheckOverlaps(false),
 		//fLeakCntPV(nullptr),
+    fLeakCntlPV(nullptr),
+    fLeakCntdPV(nullptr),
     fWorldPV(nullptr){
 
     fGeoMessenger = new DREMTubesGeoMessenger(this);
@@ -741,7 +743,7 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
       //leakageabsorberlLV->SetVisAttributes(invisibleAttr); 
       //leakageabsorberlLV->SetVisAttributes(G4VisAttributes::Invisible);
 
-      new G4PVPlacement( transform,
+      fLeakCntlPV = new G4PVPlacement( transform,
               leakageabsorberlLV,         
                                       "leakageabsorberl",
                                       worldLV,               
@@ -769,7 +771,7 @@ G4VPhysicalVolume* DREMTubesDetectorConstruction::DefineVolumes() {
 
       positiond.setZ(caloBoxZ+disc_th/2 + tailCatcherDist + 2*leakBoxY + 30.*cm);
       G4Transform3D transformd = G4Transform3D(rotm,positiond); 
-      new G4PVPlacement( transformd,
+      fLeakCntdPV = new G4PVPlacement( transformd,
                         leakageabsorberdLV,
                         "leakageabsorberd",
                         worldLV,
