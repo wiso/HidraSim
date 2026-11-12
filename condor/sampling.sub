@@ -18,6 +18,9 @@ endif
 if !defined joblist
   joblist = joblists/sampling_v1.txt
 endif
+if !defined macroargs
+  macroargs =
+endif
 if !defined prio
   prio = 0
 endif
@@ -29,7 +32,7 @@ if !defined physlist
 endif
 rundir     = $(runsdir)/$(tag)
 executable = $(hidra)/condor/sampling_job.sh
-arguments  = "$(rundir) $(energy) $(ie) $(job) $(nev) $(build) $(particle) $(physlist)"
+arguments  = "$(rundir) $(energy) $(ie) $(job) $(nev) $(build) $(particle) $(physlist) $(macroargs)"
 initialdir = $(rundir)/logs
 output     = sf_E$(energy)_$(job).out
 error      = sf_E$(energy)_$(job).err

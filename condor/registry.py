@@ -164,7 +164,8 @@ def cmd_new(a):
            f"> {os.path.join(d, 'macros', f'E{E}.mac')}")
     mac0 = open(os.path.join(d, "macros", f"E{jobs[0]['energy']}.mac")).read()
     geo = dict(re.findall(r"^/tbgeo/(\w+)\s+(.+)$", mac0, flags=re.M))
-    pos = re.search(r"^/gps/position\s+(.+)$", mac0, flags=re.M)
+    pos = re.search(r"^/gps/(?:position|pos/centre)\s+(.+)$", mac0, flags=re.M)
+    gps_pos = dict(re.findall(r"^/gps/pos/(\w+)\s+(.+)$", mac0, flags=re.M))
     gp = os.path.join(REPO, "include", "DREMTubesGeoPar.hh")
     info = dict(
         tag=a.tag, status="created", created=now(), submitted=None, finished=None,
@@ -180,7 +181,8 @@ def cmd_new(a):
                         njobs=len(jobs), events_total=sum(j["nev"] for j in jobs),
                         seed_scheme="seed1 = 1000*iE + job + 1, seed2 = 7*seed1 + 13 (iE, job from joblist)",
                         macro_generator="sampling/make_macro.py " + extra,
-                        beam=dict(type="Point", direction="0 0 1", position=pos.group(1) if pos else None),
+                        beam=dict(type=gps_pos.get("type", "Point"), shape=gps_pos.get("shape"), halfx=gps_pos.get("halfx"),
+                                  halfy=gps_pos.get("halfy"), direction="0 0 1", position=pos.group(1) if pos else None),
                         tbgeo=geo, geopar=geopar(gp), geopar_md5=md5(gp)),
         files=dict(run_dir=d, joblist="joblist.txt", macros="macros/E<E>.mac",
                    job_outputs="sf_E<E>_<job>.root", job_info="jobinfo/E<E>_<job>.json",
