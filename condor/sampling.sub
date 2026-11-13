@@ -33,7 +33,12 @@ endif
 rundir     = $(runsdir)/$(tag)
 executable = $(hidra)/condor/sampling_job.sh
 arguments  = "$(rundir) $(energy) $(ie) $(job) $(nev) $(build) $(particle) $(physlist) $(macroargs)"
-initialdir = $(rundir)/logs
+# condor .out/.err/.log are written by the shadow on the schedd host, which does not mount /storage_tmp:
+# keep them in home (copied into <rundir>/logs at close); job outputs go to $(rundir) on storage
+if !defined condorlogs
+  condorlogs = $ENV(HOME)/HidraSim/runs/condorlogs
+endif
+initialdir = $(condorlogs)/$(tag)
 output     = sf_E$(energy)_$(job).out
 error      = sf_E$(energy)_$(job).err
 log        = sampling.$(ClusterId).log

@@ -15,6 +15,7 @@ PARTICLE=${PARTICLE:-e+}; PHYSLIST=${PHYSLIST:-FTFP_BERT}; PRIO=${PRIO:-0}
 export HIDRA_DIR=$HIDRA HIDRA_RUNS=$RUNS HIDRA_EXE=$BUILD/DREMTubes
 ENVF=$BUILD/hidra_env.sh; [ -f "$ENVF" ] || ENVF=$HIDRA/setup_proof.sh
 python3 "$HERE/registry.py" new "$TAG" "$JOBLIST" --note "$NOTE" --particle "$PARTICLE" --physlist "$PHYSLIST" --setup "$ENVF" --macro-args "${MACRO_ARGS:-}"
+mkdir -p "${CONDORLOGS:-$HOME/HidraSim/runs/condorlogs}/$TAG"
 cd "$HERE"
 OUT=$(condor_submit sampling.sub hidra="$HIDRA" runsdir="$RUNS" build="$BUILD" tag="$TAG" \
       joblist="$RUNS/$TAG/joblist.txt" particle="$PARTICLE" physlist="$PHYSLIST" prio="$PRIO" macroargs="${MACRO_ARGS:-}")
