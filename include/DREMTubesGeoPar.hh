@@ -70,6 +70,7 @@ const G4bool TruthLeakageIn = true;
 
 
 
+/*
 // 70 modules -> TB25
 const G4int NofmodulesX = 5;
 const G4int NofmodulesY = 18;
@@ -100,9 +101,8 @@ const G4int NoModulesActive=70;
 const G4double moduleZ = (2500.)*mm;
 const G4bool irot=false;
 const G4int NoFibersTower=NofFiberscolumn*NofFibersrow/2;
+*/
 
-
-/*
 // 80 modules -> TB26 (HiDRa geometry, SiPMs placed in two towers)
 const G4int NofmodulesX = 5;
 const G4int NofmodulesY = 20;
@@ -134,7 +134,7 @@ const G4int NofFibersrow = 16;
 const G4int NoModulesActive=80;
 const G4double moduleZ = (2500.)*mm;
 const G4bool irot=false;
-const G4int NoFibersTower=NofFiberscolumn*NofFibersrow/2;*/
+const G4int NoFibersTower=NofFiberscolumn*NofFibersrow/2;
 
 
 

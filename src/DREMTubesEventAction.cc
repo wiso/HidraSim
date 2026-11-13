@@ -20,6 +20,12 @@
 #include "G4Event.hh"
 #include "G4UnitsTable.hh"
 #include "Randomize.hh"
+#include "G4PhysicalVolumeStore.hh"
+#include "G4VPhysicalVolume.hh"
+#include "G4LogicalVolume.hh"
+#include "G4Box.hh"
+#include "G4PrimaryVertex.hh"
+#include "G4PrimaryParticle.hh"
 
 //Includers from C++
 //
@@ -45,6 +51,10 @@ DREMTubesEventAction::DREMTubesEventAction()
     EscapedEnergyl(0.),
     EscapedEnergyd(0.),    
     PSEnergy(0.),
+    VertexX(0.),
+    VertexY(0.),
+    ImpactX(0.),
+    ImpactY(0.),
     VectorSignals(0.),
     VectorSignalsCher(0.),
     VecSPMT(0.),
@@ -93,9 +103,41 @@ void DREMTubesEventAction::BeginOfEventAction(const G4Event*) {
 
 }
 
-void DREMTubesEventAction::EndOfEventAction(const G4Event* ) {
+// Straight-line extrapolation of the primary from its vertex to the calorimeter
+// front face. The front face is the plane z = -halfZ of the "Calorimeter" box,
+// placed (unrotated) inside "CalorimeterBox", which carries the platform
+// rotation and shift (/tbgeo/). Result in the calorimeter frame: module centres
+// are at x = -128 mm*(column-2), y = 27.728 mm*(row-(NofmodulesY-1)/2) (0-based).
+void DREMTubesEventAction::ComputeImpact(const G4Event* event) {
+    VertexX = VertexY = ImpactX = ImpactY = 0.;
+    const G4PrimaryVertex* vtx = event->GetPrimaryVertex(0);
+    if (!vtx || !vtx->GetPrimary(0)) return;
+    G4ThreeVector pos = vtx->GetPosition();
+    G4ThreeVector dir = vtx->GetPrimary(0)->GetMomentumDirection();
+    VertexX = pos.x();
+    VertexY = pos.y();
+    static G4ThreadLocal const G4VPhysicalVolume* boxPV = nullptr;
+    static G4ThreadLocal G4double halfZ = 0.;
+    if (!boxPV) {
+        auto store = G4PhysicalVolumeStore::GetInstance();
+        boxPV = store->GetVolume("CalorimeterBox", false);
+        auto caloPV = store->GetVolume("Calorimeter", false);
+        if (caloPV) halfZ = static_cast<const G4Box*>(caloPV->GetLogicalVolume()->GetSolid())->GetZHalfLength();
+        if (!boxPV || !caloPV) { G4cerr << "ComputeImpact: calorimeter volumes not found" << G4endl; return; }
+    }
+    G4RotationMatrix rinv = boxPV->GetObjectRotationValue().inverse();
+    G4ThreeVector p = rinv * (pos - boxPV->GetObjectTranslation());
+    G4ThreeVector d = rinv * dir;
+    if (d.z() == 0.) return;
+    G4double t = (-halfZ - p.z()) / d.z();
+    ImpactX = p.x() + t * d.x();
+    ImpactY = p.y() + t * d.y();
+}
+
+void DREMTubesEventAction::EndOfEventAction(const G4Event* event) {
  
     G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+    ComputeImpact(event);
 
     //Add all p.e. in Scin and Cher fibers before calibration
     //
@@ -126,6 +168,10 @@ void DREMTubesEventAction::EndOfEventAction(const G4Event* ) {
     analysisManager->FillNtupleDColumn(11,PrimaryY);
     analysisManager->FillNtupleDColumn(12,NofPheSciSiPM);
     analysisManager->FillNtupleDColumn(13,NofPheCerSiPM);    
+    analysisManager->FillNtupleDColumn(14,VertexX);
+    analysisManager->FillNtupleDColumn(15,VertexY);
+    analysisManager->FillNtupleDColumn(16,ImpactX);
+    analysisManager->FillNtupleDColumn(17,ImpactY);
     analysisManager->AddNtupleRow();
     //Vector entries in ntuple are automatically filled
 

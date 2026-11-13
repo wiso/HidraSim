@@ -60,6 +60,10 @@ DREMTubesRunAction::DREMTubesRunAction( DREMTubesEventAction* eventAction )
     analysisManager->CreateNtupleDColumn("PrimaryY");                       //11
     analysisManager->CreateNtupleDColumn("NofSiPMScinDet");                 //12
     analysisManager->CreateNtupleDColumn("NofSiPMCherDet");                 //13    
+    analysisManager->CreateNtupleDColumn("VertexX");                        //14 primary vertex, world (mm)
+    analysisManager->CreateNtupleDColumn("VertexY");                        //15
+    analysisManager->CreateNtupleDColumn("ImpactX");                        //16 primary impact on front face, calo frame (mm)
+    analysisManager->CreateNtupleDColumn("ImpactY");                        //17
     analysisManager->CreateNtupleDColumn("VectorSignals", fEventAction->GetVectorSignals());
     analysisManager->CreateNtupleDColumn("VectorSignalsCher", fEventAction->GetVectorSignalsCher());
     analysisManager->CreateNtupleDColumn("VecTowerE", fEventAction->GetVecTowerE());

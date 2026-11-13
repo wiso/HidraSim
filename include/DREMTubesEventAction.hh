@@ -87,6 +87,13 @@ class DREMTubesEventAction : public G4UserEventAction {
         G4double  EscapedEnergyl; //Energy deposited in leakage lateral absorber
         G4double  EscapedEnergyd; //Energy deposited in leakage longitudinal absorber        
 	G4double  PSEnergy;
+        // Primary vertex (world frame, gun plane) and straight-line impact point of the
+        // primary on the calorimeter front face, in the calorimeter frame (mm)
+        G4double  VertexX;
+        G4double  VertexY;
+        G4double  ImpactX;
+        G4double  ImpactY;
+        void ComputeImpact(const G4Event* event);
 
         //Vector of SiPMs filled with scintillating signals
     	//
