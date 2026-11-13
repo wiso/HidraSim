@@ -5,7 +5,7 @@
 set -e
 TAG=$1; NOTE=${2:-}
 HERE=$(cd "$(dirname "$(readlink -f "$0")")" && pwd); HIDRA=$(dirname "$HERE")
-RUNS=${HIDRA_RUNS:-$HIDRA/runs}; D=$RUNS/$TAG
+RUNS=${HIDRA_RUNS:-${OUTBASE:-/storage_tmp/atlas/turra/hidra/sim}}; D=$RUNS/$TAG
 [ -f "$D/run_info.json" ] || { echo "unknown tag $TAG"; exit 1; }
 export HIDRA_DIR=$HIDRA HIDRA_RUNS=$RUNS
 CID=$(python3 -c "import json;print(json.load(open('$D/run_info.json')).get('cluster_id') or '')")
@@ -16,7 +16,7 @@ if [ -z "$NO_MERGE" ]; then
   [ -n "$ENVF" ] && source "$ENVF" >/dev/null 2>&1
   mkdir -p "$D/merged"
   for E in $(awk '{print $1}' "$D/joblist.txt" | sort -un); do
-    shopt -s nullglob; fl=("$D"/sf_E${E}_*.root); shopt -u nullglob
+    shopt -s nullglob; fl=("$D"/out/sf_E${E}_*.root "$D"/sf_E${E}_*.root); shopt -u nullglob
     [ ${#fl[@]} -gt 0 ] || continue
     hadd -f "$D/merged/sf_E$E.root" "${fl[@]}" > /dev/null && MERGED+=("merged/sf_E$E.root")
   done

@@ -8,7 +8,7 @@ set -e
 TAG=$1; JOBLIST=$(readlink -f "$2"); NOTE=${3:-}
 [ -n "$TAG" ] && [ -f "$JOBLIST" ] || { echo "usage: $0 <tag> <joblist> [note]"; exit 1; }
 HERE=$(cd "$(dirname "$(readlink -f "$0")")" && pwd); HIDRA=$(dirname "$HERE")
-RUNS=${HIDRA_RUNS:-$HIDRA/runs}; BUILD=$(readlink -f "${BUILD:-$HIDRA/build}")
+RUNS=${HIDRA_RUNS:-${OUTBASE:-/storage_tmp/atlas/turra/hidra/sim}}; BUILD=$(readlink -f "${BUILD:-$HIDRA/build}")
 PARTICLE=${PARTICLE:-e+}; PHYSLIST=${PHYSLIST:-FTFP_BERT}; PRIO=${PRIO:-0}
 [ -e "$RUNS/$TAG" ] && { echo "tag '$TAG' already exists in $RUNS"; exit 1; }
 [ -x "$BUILD/DREMTubes" ] || { echo "no executable in $BUILD"; exit 1; }

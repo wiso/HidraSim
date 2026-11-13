@@ -66,6 +66,9 @@ DREMTubesRunAction::DREMTubesRunAction( DREMTubesEventAction* eventAction )
     analysisManager->CreateNtupleDColumn("VecSPMT", fEventAction->GetVecSPMT());
     analysisManager->CreateNtupleDColumn ("VecCPMT", fEventAction->GetVecCPMT());
     analysisManager->CreateNtupleDColumn ("VecLeakCounter", fEventAction->GetVecLeakCounter());
+    analysisManager->CreateNtupleDColumn ("VecSliceS", fEventAction->GetVecSliceS());
+    analysisManager->CreateNtupleDColumn ("VecSliceC", fEventAction->GetVecSliceC());
+    analysisManager->CreateNtupleDColumn ("VecSliceAbs", fEventAction->GetVecSliceAbs());
     analysisManager->FinishNtuple();
       
 }

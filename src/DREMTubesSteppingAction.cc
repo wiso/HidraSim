@@ -121,7 +121,26 @@ void DREMTubesSteppingAction::AuxSteppingAction( const G4Step* step ) {
          volume != fDetConstruction->GetLeakCntdPV() &&
          volume->GetName() != "Preshower_scin" &&
          volume->GetName() != "Preshower_pb" &&
-         volume->GetName() != "leakbox" ) { fEventAction->Addenergy(edep); }
+         volume->GetName() != "leakbox" ) {
+        fEventAction->Addenergy(edep);
+        // Longitudinal-profile study: same volumes as EnergyDepCalo, split into S fibre / C fibre / rest,
+        // depth = local z in the Calorimeter frame (module axis) measured from the module front face.
+        if (edep > 0.) {
+            const G4String& vn = volume->GetName();
+            G4int kind = (vn.find("S_fiber") != std::string::npos) ? 0 : (vn.find("C_fiber") != std::string::npos ? 1 : 2);
+            G4int slice = DREMTubesEventAction::NofSlices-1;
+            const G4NavigationHistory* hist = step->GetPreStepPoint()->GetTouchableHandle()->GetHistory();
+            for (G4int i = hist->GetDepth(); i >= 0; --i) {
+                if (hist->GetVolume(i)->GetName() == "Calorimeter") {
+                    G4ThreeVector mid = 0.5*(step->GetPreStepPoint()->GetPosition()+step->GetPostStepPoint()->GetPosition());
+                    G4double depth = hist->GetTransform(i).TransformPoint(mid).z() + moduleZ/2.;
+                    slice = DREMTubesEventAction::SliceIndex(depth);
+                    break;
+                }
+            }
+            fEventAction->AddSlice(kind, slice, edep);
+        }
+    }
    
     if ( step->GetTrack()->GetTrackID() == 1 &&
         step->GetTrack()->GetCurrentStepNumber() == 1){

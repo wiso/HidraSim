@@ -89,6 +89,9 @@ void DREMTubesEventAction::BeginOfEventAction(const G4Event*) {
     VecCPMT.assign(NoModulesActive, 0.);
     VecTowerE.assign(NoModulesActive, 0.);
     VecLeakCounter.assign(4*NofLeakCounterLayers+1, 0.);
+    VecSliceS.assign(NofSlices, 0.);
+    VecSliceC.assign(NofSlices, 0.);
+    VecSliceAbs.assign(NofSlices, 0.);
 
 
 }

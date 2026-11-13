@@ -7,7 +7,7 @@ if !defined hidra
   hidra = $ENV(HOME)/HidraSim
 endif
 if !defined runsdir
-  runsdir = $(hidra)/runs
+  runsdir = /storage_tmp/atlas/turra/hidra/sim
 endif
 if !defined build
   build = $(hidra)/build

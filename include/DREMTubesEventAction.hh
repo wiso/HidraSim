@@ -52,6 +52,13 @@ class DREMTubesEventAction : public G4UserEventAction {
 	std::vector<G4double>& GetVecSPMT() {return VecSPMT;}
 	std::vector<G4double>& GetVecCPMT() {return VecCPMT;}
     std::vector<G4double>& GetVecLeakCounter() {return VecLeakCounter;}
+        // Longitudinal-profile study (study/sampling-long): energy per depth slice
+        std::vector<G4double>& GetVecSliceS() {return VecSliceS;}
+        std::vector<G4double>& GetVecSliceC() {return VecSliceC;}
+        std::vector<G4double>& GetVecSliceAbs() {return VecSliceAbs;}
+        void AddSlice(G4int kind, G4int slice, G4double de); // kind 0=S fibre, 1=C fibre, 2=rest of calorimeter
+        static G4int SliceIndex(G4double depth); // depth from module front face [mm]
+        static const G4int NofSlices = 92;       // 0: depth<0, 1..50: 10 mm (0-500), 51..90: 50 mm (500-2500), 91: depth>=2500 or outside calo
 
         //Fill vector of scintillating fibers with energy deposition
         //
@@ -105,6 +112,9 @@ class DREMTubesEventAction : public G4UserEventAction {
     	std::vector<G4double> VecTowerE;
         //
    	    std::vector<G4double> VecLeakCounter;
+        std::vector<G4double> VecSliceS;
+        std::vector<G4double> VecSliceC;
+        std::vector<G4double> VecSliceAbs;
         //        
 
 };
@@ -151,6 +161,19 @@ inline void DREMTubesEventAction::AddVecSPMT(G4int PMTID, G4double de) {
 
 inline void DREMTubesEventAction::AddVecCPMT(G4int PMTID, G4double de) {
     VecCPMT.at(PMTID) += de;
+}
+
+inline G4int DREMTubesEventAction::SliceIndex(G4double depth) {
+    if (depth < 0.) return 0;
+    if (depth < 500.) return 1 + G4int(depth/10.);
+    if (depth < 2500.) return 51 + G4int((depth-500.)/50.);
+    return NofSlices-1;
+}
+
+inline void DREMTubesEventAction::AddSlice(G4int kind, G4int slice, G4double de) {
+    if (kind == 0) VecSliceS.at(slice) += de;
+    else if (kind == 1) VecSliceC.at(slice) += de;
+    else VecSliceAbs.at(slice) += de;
 }
 
 inline void DREMTubesEventAction::AddVecLeakCounter(G4int LCID, G4double de) {

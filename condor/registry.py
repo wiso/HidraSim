@@ -33,7 +33,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.environ.get("HIDRA_DIR", os.path.dirname(HERE))
-RUNS = os.environ.get("HIDRA_RUNS", os.path.join(REPO, "runs"))
+RUNS = os.environ.get("HIDRA_RUNS", os.environ.get("OUTBASE", "/storage_tmp/atlas/turra/hidra/sim"))
 EXE = os.environ.get("HIDRA_EXE", os.path.join(REPO, "build", "DREMTubes"))
 
 
@@ -185,7 +185,7 @@ def cmd_new(a):
                                   halfy=gps_pos.get("halfy"), direction="0 0 1", position=pos.group(1) if pos else None),
                         tbgeo=geo, geopar=geopar(gp), geopar_md5=md5(gp)),
         files=dict(run_dir=d, joblist="joblist.txt", macros="macros/E<E>.mac",
-                   job_outputs="sf_E<E>_<job>.root", job_info="jobinfo/E<E>_<job>.json",
+                   job_outputs="out/sf_E<E>_<job>.root", job_info="jobinfo/E<E>_<job>.json",
                    logs="logs/", merged=[]),
         result=None,
     )
@@ -214,8 +214,8 @@ def job_records(d):
     for f in glob.glob(os.path.join(d, "jobinfo", "*.json")):
         r = json.load(open(f))
         recs[(str(r["energy"]), int(r["job"]))] = r
-    for f in glob.glob(os.path.join(d, "logs", "sf_E*_*.out")):
-        m = re.search(r"sf_E([\d.]+)_(\d+)\.out$", f)
+    for f in glob.glob(os.path.join(d, "logs", "sf_E*_*.out")) + glob.glob(os.path.join(d, "logs", "E*_*.run.log")):
+        m = re.search(r"E([\d.]+)_(\d+)\.(?:out|run\.log)$", f)
         key = (m.group(1), int(m.group(2)))
         if key in recs:
             continue
@@ -239,7 +239,9 @@ def cmd_close(a):
     per_e, failed, missing = {}, [], []
     for j in jobs:
         key = (j["energy"], j["job"])
-        out = os.path.join(d, f"sf_E{j['energy']}_{j['job']}.root")
+        out = os.path.join(d, "out", f"sf_E{j['energy']}_{j['job']}.root")
+        if not os.path.exists(out):  # old layout: outputs at the top of the run dir
+            out = os.path.join(d, f"sf_E{j['energy']}_{j['job']}.root")
         r = recs.get(key, {})
         e = per_e.setdefault(j["energy"], dict(jobs_ok=0, events=0, cpu_s=0, hosts={}, geant4=set()))
         if os.path.exists(out) and r.get("exit_code", 0) == 0 and r.get("elapsed_s"):
