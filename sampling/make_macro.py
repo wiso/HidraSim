@@ -50,10 +50,13 @@ def main():
                     help="point-like beam, or uniform rectangle (test-beam trigger 4x4 cm^2)")
     ap.add_argument("--halfx", type=float, default=20.0, help="mm, half side along x for --beam square")
     ap.add_argument("--halfy", type=float, default=20.0, help="mm, half side along y for --beam square")
+    ap.add_argument("--dx", type=float, default=0.0, help="mm, shift of the beam centre along x (e.g. scan within the fibre cell)")
+    ap.add_argument("--dy", type=float, default=0.0, help="mm, shift of the beam centre along y")
     ap.add_argument("--setcut", type=float, default=None, help="mm, global production cut (/run/setCut); default: physics-list default 0.7 mm")
     a = ap.parse_args()
 
     x0, y0 = beam_xy(a.horizrot, a.vertrot, a.target)
+    x0, y0 = x0 + a.dx, y0 + a.dy
     if a.beam == "point":
         beam = f"/gps/pos/type Point\n/gps/position {x0:.3f} {y0:.3f} -3500 mm"
     else:  # uniform rectangle in the plane z = -3500 mm, centred on the same beam line
